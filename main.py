@@ -1,97 +1,131 @@
+from color_comands import *
+from decimal import Decimal
+import os
+import hashlib
+import decimal
+
 id_user = 0
 balance = 100
 state = None
 list_of_users = []
 
 
+def validation(login, password):
+    if len(login) < 5:
+        print('Your login is too short')
+        reg()
+    elif len(password) < 7:
+        print('Your password is too short')
+        reg()
+    elif not login.isalnum():
+        print("Login should not contain special characters, only letters and numbers ")
+        reg()
+    elif not password.isalnum():
+        print("Password should not contain special characters, only letters and numbers ")
+        reg()
+    else:
+        pass
+
+
 def reg():
     global id_user
-    print('Create your login: ')
+    print(create_login)
     new_login = input()
-    print('Create your password: ')
+    print(create_pass)
     new_password = input()
-    for l in range(len(list_of_users)):
-        for p in range(len(list_of_users[l])):
-            if list_of_users[l][1] == new_login:
-                print('This login already exist, try something else')
+    validation(new_login, new_password)
+    for line in range(len(list_of_users)):
+        for column in range(len(list_of_users[line])):
+            if list_of_users[line][1] == new_login:
+                print(login_exist)
                 reg()
     else:
         id_user += 1
-        list_of_users.extend([[id_user, new_login, new_password, balance]])
-        print("Great, now you must enter in your account")
+        salt = os.urandom(32)
+        key = hashlib.pbkdf2_hmac('sha256', new_password.encode('utf-8'), salt, 100000)
+        list_of_users.extend([[id_user, new_login, key, balance, salt]])
+        print(enter)
         auth()
+
 
 def auth():
     global state
-    print('Write your login: ')
+    print(write_login)
     login = input()
-    print('Write your password: ')
+    print(write_pass)
     password = input()
-    for l in range(len(list_of_users)):
-        for p in range(len(list_of_users[l])):
-            if list_of_users[l][1] == login and list_of_users[l][2] == password:
-                state = list_of_users[l][0]
-                print(f'Hello, {login}')
+    for line in range(len(list_of_users)):
+        for column in range(len(list_of_users[line])):
+            new_key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), list_of_users[line][4], 100000)
+            if list_of_users[line][1] == login and list_of_users[line][2] == new_key:
+                state = list_of_users[line][0]
+                print(welcome, login)
                 deposit()
     else:
-        print("Login or password is incorrect ")
+        print(incorrect_log_pass)
         auth()
 
 
 def enter_deposit():
     global state
-    print("Specify the amount you want to deposit: ")
-    count_of_money = input()
-    if count_of_money.isdigit():
-        for l in range(len(list_of_users)):
-            for p in range(len(list_of_users[l])):
-                if int(count_of_money) >= 10000:
-                    print("Mne kajetsa ti naebchik")
-                    auth()
-                elif list_of_users[l][0] == state:
-                    list_of_users[l][3] += int(count_of_money)
-                    print(list_of_users)
-                    print("Money has been deposited")
-                    deposit()
-    else:
-        print("You enter not number, please try again")
+    print(count_deposit)
+    try:
+        count_of_money = Decimal(input())
+        if isinstance(count_of_money, Decimal):
+            for line in range(len(list_of_users)):
+                for column in range(len(list_of_users[line])):
+                    if Decimal(count_of_money) >= 10000:
+                        print(naebchik)
+                        auth()
+                    elif list_of_users[line][0] == state:
+                        list_of_users[line][3] += Decimal(count_of_money)
+                        print(deposited)
+                        deposit()
+    except decimal.InvalidOperation:
+        print(not_number)
+    finally:
         enter_deposit()
 
 
 def withdraw():
     global state
-    print("Specify the amount you want to withdraw: ")
-    withdraw = input()
-    for l in range(len(list_of_users)):
-        for p in range(len(list_of_users[l])):
-            if list_of_users[l][0] == state:
-                if list_of_users[l][3] < int(withdraw):
-                    print("There are not enough funds in your account")
-                    deposit()
-                else:
-                    list_of_users[l][3] -= int(withdraw)
-                    print("You have successfully withdrawn funds")
-                    deposit()
+    print(withdraw_count)
+    try:
+        count_of_withdraw = Decimal(input())
+        for line in range(len(list_of_users)):
+            for column in range(len(list_of_users[line])):
+                if list_of_users[line][0] == state:
+                    if list_of_users[line][3] < Decimal(count_of_withdraw):
+                        print(not_enough_funds)
+                        deposit()
+                    else:
+                        list_of_users[line][3] -= Decimal(count_of_withdraw)
+                        print(success_withdraw)
+                        deposit()
+    except decimal.InvalidOperation:
+        print(not_number)
+    finally:
+        withdraw()
 
 
 def view_balance():
     global state
-    for l in range(len(list_of_users)):
-        for p in range(len(list_of_users[l])):
-            if list_of_users[l][0] == state:
-                print(f"""You have {list_of_users[l][3]} dollars on your account""")
+    for line in range(len(list_of_users)):
+        for column in range(len(list_of_users[line])):
+            if list_of_users[line][0] == state:
+                print(f"""You have {list_of_users[line][3]} dollars on your account""")
                 deposit()
 
 
 def deposit():
     global balance
-    print('Choose option: \n'
-          'Press "1" to view balance \n'
-          'Press "2" to to enter deposit \n'
-          'Press "3" to withdraw \n'
-          'Press "4" to exit from your account \n'
-          'Press "5" to create new account \n'
-          'Press "6" to exit')
+    print(options,
+          option1,
+          option2,
+          option3,
+          option4,
+          option5,
+          option6)
     option = input()
     if option == "1":
         view_balance()
@@ -106,22 +140,21 @@ def deposit():
     if option == "6":
         raise SystemExit
     else:
-        print("Incorrect number, you must choose 1, 2 or 3")
+        print(incorrect_number)
         deposit()
 
 
 def menu():
-    print('Press "1" to registration \n'
-          'Press "2" to authorisation \n')
+    print(registration, authorisation)
     num = input()
     if num == "1":
         reg()
     if num == "2":
-        print("First, you need to create account")
+        print(first_create_acc)
         reg()
         pass
     else:
-        print("Incorrect number, you must choose 1 or 2")
+        print(incorrect_numbers12)
         menu()
 
 
